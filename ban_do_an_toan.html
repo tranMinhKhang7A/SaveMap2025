@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Bản đồ an toàn trong lũ 🌧️</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    body { font-family: sans-serif; }
+    #map { height: 85vh; width: 100%; margin-top: 10px; }
+    .buttons { margin: 10px; }
+    button {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      margin-right: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .ngap { background: #e74c3c; color: white; }
+    .antoan { background: #27ae60; color: white; }
+    .cuuho { background: #f1c40f; color: black; }
+  </style>
+</head>
+<body>
+  <h3>Bản đồ an toàn trong lũ 🌧️</h3>
+  <div class="buttons">
+    <button class="ngap" onclick="chonLoai('ngap')">🚫 Đường ngập</button>
+    <button class="antoan" onclick="chonLoai('antoan')">✅ Điểm an toàn</button>
+    <button class="cuuho" onclick="chonLoai('cuuho')">🆘 Cần cứu hộ</button>
+  </div>
+  <div id="map"></div>
+
+  <script>
+    var map = L.map('map').setView([21.0285, 105.8542], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    var loai = 'antoan';
+    var apiURL = "https://script.google.com/macros/s/AKfycbyX2UZsgAYo7KIzfMfTJR8a4KsShGlhvAL16IFekLS6Fw7ceBtPJiPoCPozt4snrBOn/exec"; // 👈 Dán link API Google Script ở đây
+
+    function chonLoai(l) {
+      loai = l;
+      alert("Bạn đang chọn loại: " + l);
+    }
+
+    function taoMarker(lat, lng, loai) {
+      var color, text;
+      if (loai === 'ngap') {
+        color = 'red'; text = '⚠️ Đường ngập';
+      } else if (loai === 'antoan') {
+        color = 'green'; text = '✅ Điểm an toàn';
+      } else {
+        color = 'orange'; text = '🆘 Cần cứu hộ';
+      }
+
+      var marker = L.circleMarker([lat, lng], {
+        radius: 10,
+        color: color,
+        fillColor: color,
+        fillOpacity: 0.8
+      }).addTo(map);
+      marker.bindPopup(text).openPopup();
+    }
+
+    map.on('click', function(e) {
+      var lat = e.latlng.lat;
+      var lng = e.latlng.lng;
+      taoMarker(lat, lng, loai);
+      // Gửi dữ liệu lên Google Sheets
+      fetch(apiURL, {
+        method: "POST",
+        body: JSON.stringify({ loai: loai, lat: lat, lng: lng }),
+        headers: { "Content-Type": "application/json" }
+      }).then(r => console.log("Đã gửi dữ liệu:", r));
+    });
+  </script>
+</body>
+</html>
