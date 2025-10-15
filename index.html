@@ -27,6 +27,9 @@
 </head>
 <body>
   <h3>Bản đồ an toàn trong lũ 🌧️</h3>
+  <div id="status" style="margin:10px; font-weight:bold; color:green;">
+  🟢 Loại hiện tại: ✅ Điểm an toàn
+  </div>
   <div class="buttons">
     <button class="ngap" onclick="chonLoai('ngap')">🚫 Đường ngập</button>
     <button class="antoan" onclick="chonLoai('antoan')">✅ Điểm an toàn</button>
@@ -54,9 +57,11 @@
       })
       .catch(err => console.error("Lỗi tải dữ liệu:", err));
     function chonLoai(l) {
-      loai = l;
-      alert("Bạn đang chọn loại: " + l);
-    }
+	  loai = l;
+	  const text = l === 'ngap' ? '🚫 Đường ngập' :
+				   l === 'antoan' ? '✅ Điểm an toàn' : '🆘 Cần cứu hộ';
+	  document.getElementById('status').textContent = '🟢 Loại hiện tại: ' + text;
+	}
 
     function taoMarker(lat, lng, loai) {
       var color, text;
@@ -91,6 +96,7 @@
   </script>
 </body>
 </html>
+
 
 
 
