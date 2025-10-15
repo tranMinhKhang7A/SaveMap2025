@@ -43,7 +43,16 @@
 
     var loai = 'antoan';
     var apiURL = "https://billowing-sea-9e3a.agribarniot.workers.dev/https://script.google.com/macros/s/AKfycbw4brpnINBsn8GZHABvGg6IGg05zB8mp697QPuWWlyfFn_2EcbFq7RMfcESBAoCFGWw/exec"; // 👈 Dán link API Google Script ở đây
-
+    // 🔹 Khi tải trang, gọi API để hiển thị các điểm đã lưu
+    fetch(apiURL)
+      .then(res => res.json())
+      .then(data => {
+        console.log("Dữ liệu cũ từ Sheets:", data);
+        data.forEach(item => {
+          taoMarker(item.lat, item.lng, item.loai);
+        });
+      })
+      .catch(err => console.error("Lỗi tải dữ liệu:", err));
     function chonLoai(l) {
       loai = l;
       alert("Bạn đang chọn loại: " + l);
@@ -82,6 +91,7 @@
   </script>
 </body>
 </html>
+
 
 
 
