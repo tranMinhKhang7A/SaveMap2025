@@ -24,17 +24,22 @@
     .antoan { background: #27ae60; color: white; }
     .cuuho { background: #f1c40f; color: black; }
   </style>
+  
 </head>
+
 <body>
   <h3>Bản đồ an toàn trong lũ 🌧️</h3>
+  
   <div id="status" style="margin:10px; font-weight:bold; color:green;">
   🟢 Loại hiện tại: ✅ Điểm an toàn
   </div>
+  
   <div class="buttons">
     <button class="ngap" onclick="chonLoai('ngap')">🚫 Đường ngập</button>
     <button class="antoan" onclick="chonLoai('antoan')">✅ Điểm an toàn</button>
     <button class="cuuho" onclick="chonLoai('cuuho')">🆘 Cần cứu hộ</button>
   </div>
+  
   <div id="map"></div>
 
   <script>
@@ -43,19 +48,34 @@
       maxZoom: 19,
       attribution: '© OpenStreetMap'
     }).addTo(map);
+    // 🔹 Định vị vị trí hiện tại của người dùng
+	map.locate({ setView: true, maxZoom: 16 });
+
+	function onLocationFound(e) {
+	  L.marker(e.latlng).addTo(map).bindPopup("📍 Bạn đang ở đây!").openPopup();
+	}
+
+	function onLocationError(e) {
+	  console.warn("⚠️ Không thể lấy vị trí:", e.message);
+	}
+
+	map.on('locationfound', onLocationFound);
+	map.on('locationerror', onLocationError);
 
     var loai = 'antoan';
-    var apiURL = "https://billowing-sea-9e3a.agribarniot.workers.dev/https://script.google.com/macros/s/AKfycbw4brpnINBsn8GZHABvGg6IGg05zB8mp697QPuWWlyfFn_2EcbFq7RMfcESBAoCFGWw/exec"; // 👈 Dán link API Google Script ở đây
+      var apiURL = "https://billowing-sea-9e3a.agribarniot.workers.dev/https://script.google.com/macros/s/AKfycbzFeesLV0wX1lIDi1iT7SwWp7DhXLwcWstueOiorJvjPZYPt84E5bmKXvrR2OHksdU/exec"; // 👈 Dán link API Google Script ở đây
     // 🔹 Khi tải trang, gọi API để hiển thị các điểm đã lưu
-    fetch(apiURL)
-      .then(res => res.json())
-      .then(data => {
-        console.log("Dữ liệu cũ từ Sheets:", data);
-        data.forEach(item => {
-          taoMarker(item.lat, item.lng, item.loai);
-        });
-      })
+   fetch(apiURL)
+	  .then(res => res.json())
+	  .then(data => {
+		console.log("Dữ liệu cũ từ Sheets:", data);
+		data.forEach(item => {
+		  taoMarker(item.lat, item.lng, item.loai, item.uuid);
+		});
+	  })
+
       .catch(err => console.error("Lỗi tải dữ liệu:", err));
+
     function chonLoai(l) {
 	  loai = l;
 	  const text = l === 'ngap' ? '🚫 Đường ngập' :
@@ -63,45 +83,141 @@
 	  document.getElementById('status').textContent = '🟢 Loại hiện tại: ' + text;
 	}
 
-    function taoMarker(lat, lng, loai) {
-      var color, text;
-      if (loai === 'ngap') {
-        color = 'red'; text = '⚠️ Đường ngập';
-      } else if (loai === 'antoan') {
-        color = 'green'; text = '✅ Điểm an toàn';
-      } else {
-        color = 'orange'; text = '🆘 Cần cứu hộ';
-      }
+    function taoMarker(lat, lng, loai, uuid = null) {
+	  // 🎨 1. Xác định màu và nhãn dựa trên loại điểm
+	  let color, text;
+	  if (loai === 'ngap') {
+		color = 'red'; text = '🚫 Ngập';
+	  } else if (loai === 'antoan') {
+		color = 'green'; text = '✅ An toàn';
+	  } else if (loai === 'cuuho') {
+		color = 'orange'; text = '🆘 Cứu hộ';
+	  } else {
+		color = 'gray'; text = '❓Không rõ';
+	  }
 
-      var marker = L.circleMarker([lat, lng], {
-        radius: 10,
-        color: color,
-        fillColor: color,
-        fillOpacity: 0.8
-      }).addTo(map);
-      marker.bindPopup(text).openPopup();
-    }
+	  // 🗺️ 2. Tạo marker trên bản đồ
+	  const marker = L.circleMarker([lat, lng], {
+		radius: 10,
+		color: color,
+		fillColor: color,
+		fillOpacity: 0.8
+	  }).addTo(map);
+
+	  marker.uuid = uuid;
+
+	  // 🧩 3. Tạo popup hiển thị thông tin và tùy chọn
+	  let popup = `<b>${text}</b><br><i>${lat.toFixed(5)}, ${lng.toFixed(5)}</i>`;
+
+	  // 🔄 Nếu có UUID (điểm lấy từ Google Sheet) → thêm chức năng chỉnh sửa
+	  if (uuid) {
+		popup += `
+		  <br><label>Thay đổi loại:</label>
+		  <select id="newType_${uuid}">
+			<option value="ngap" ${loai === "ngap" ? "selected" : ""}>🚫 Ngập</option>
+			<option value="antoan" ${loai === "antoan" ? "selected" : ""}>✅ An toàn</option>
+			<option value="cuuho" ${loai === "cuuho" ? "selected" : ""}>🆘 Cứu hộ</option>
+		  </select>
+		  <br>
+		  <button onclick="capNhatLoai('${uuid}')">💾 Cập nhật</button>
+		  <button onclick="xoaDiem('${uuid}')">🗑️ Xóa điểm</button>
+		`;
+	  }
+
+	  marker.bindPopup(popup);
+	}
 
     map.on('click', function(e) {
-      var lat = e.latlng.lat;
-      var lng = e.latlng.lng;
-      taoMarker(lat, lng, loai);
-      // Gửi dữ liệu lên Google Sheets
-      fetch(apiURL, {
-        method: "POST",
-        body: JSON.stringify({ loai: loai, lat: lat, lng: lng }),
-        headers: { "Content-Type": "application/json" }
-      }).then(r => console.log("Đã gửi dữ liệu:", r));
-    });
+	  const lat = e.latlng.lat;
+	  const lng = e.latlng.lng;
+	  taoMarker(lat, lng, loai); // hiển thị tạm thời khi người dùng click
+
+	  // Gửi dữ liệu lên Google Sheets
+	  fetch(apiURL, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({
+		  action: "add",
+		  loai: loai,
+		  lat: lat,
+		  lng: lng
+		})
+	  })
+	  .then(res => res.json())
+	  .then(data => {
+		console.log("Phản hồi:", data);
+		if (data.uuid) {
+		  // ✅ Xóa marker tạm và tạo lại với UUID thật
+		  map.eachLayer(function(layer) {
+			if (layer instanceof L.CircleMarker && !layer.uuid) {
+			  map.removeLayer(layer);
+			}
+		  });
+		  taoMarker(lat, lng, loai, data.uuid);
+		}
+	  })
+	  .catch(err => console.error("Lỗi khi gửi:", err));
+	});
+
+	function xoaDiem(uuid) {
+	  const adminKey = prompt("🔑 Nhập khóa admin để xóa điểm:");
+	  if (!adminKey) return;
+
+	  fetch(apiURL, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({
+		  action: "delete",
+		  uuid: uuid,
+		  adminKey: adminKey
+		})
+	  })
+	  .then(res => res.json())
+	  .then(data => {
+		if (data.status === "deleted") {
+		  alert("✅ Đã xóa điểm!");
+		  location.reload(); // reload lại map
+		} else {
+		  alert("❌ Xóa thất bại: " + data.message);
+		}
+	  })
+	  .catch(err => alert("Lỗi khi xóa: " + err));
+	}
+
+	function capNhatLoai(uuid) {
+	  const select = document.getElementById(`newType_${uuid}`);
+	  const newType = select.value;
+
+	  fetch(apiURL, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({
+		  action: "updateType",
+		  uuid: uuid,
+		  loai: newType
+		})
+	  })
+	  .then(res => res.json())
+	  .then(data => {
+		if (data.status === "ok") {
+		  alert("✅ Đã cập nhật loại điểm!");
+
+		  // 🔄 Không reload trang, chỉ cập nhật marker trên map
+		  map.eachLayer(function(layer) {
+			if (layer.uuid === uuid) {
+			  const latlng = layer.getLatLng(); // ✅ Lấy lại lat/lng
+			  map.removeLayer(layer);
+			  taoMarker(latlng.lat, latlng.lng, newType, uuid);
+			}
+		  });
+
+		} else {
+		  alert("❌ Lỗi: " + data.message);
+		}
+	  })
+	  .catch(err => alert("⚠️ Lỗi khi cập nhật: " + err));
+	}
+
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
