@@ -28,7 +28,32 @@
 </head>
 
 <body>
-  <h3>Bản đồ an toàn trong lũ 🌧️</h3>
+  
+  <div style="text-align: center; line-height: 1.4;">
+    <h3 style="margin: 0; font-size: 20px; color: #0055aa;">
+      🌧️ BẢN ĐỒ AN TOÀN TRONG LŨ
+    </h3>
+    <p style="margin: 3px 0 8px 0; font-size: 16px; color: #004080;">
+      Vì một mùa mưa không ai bị bỏ lại
+    </p>
+    <p style="font-size: 14px; color: #333;">
+      Một bản đồ nhỏ bé, được vẽ nên bởi chính những người trong vùng lũ — thầy cô, học sinh, và những tấm lòng nhân ái 💙
+    </p>
+  </div>
+
+  <div style="text-align: right; margin-top: 6px;">
+    <p style="font-style: italic; font-size: 13px; color: #555;">
+      – Trần Minh Khang, lớp 8C, THCS Phú Minh
+    </p>
+  </div>
+  
+    <!-- Bộ lọc hiển thị điểm -->
+  <div style="margin: 10px; font-size: 15px;">
+    <label><input type="checkbox" id="filter_ngap" checked> 🚫 Hiện đường ngập</label>
+    <label style="margin-left: 10px;"><input type="checkbox" id="filter_antoan" checked> ✅ Hiện điểm an toàn</label>
+    <label style="margin-left: 10px;"><input type="checkbox" id="filter_cuuho" checked> 🆘 Hiện cứu hộ</label>
+  </div>
+
   
   <div id="status" style="margin:10px; font-weight:bold; color:green;">
   🟢 Loại hiện tại: ✅ Điểm an toàn
@@ -65,16 +90,24 @@
     var loai = 'antoan';
       var apiURL = "https://billowing-sea-9e3a.agribarniot.workers.dev/https://script.google.com/macros/s/AKfycbzFeesLV0wX1lIDi1iT7SwWp7DhXLwcWstueOiorJvjPZYPt84E5bmKXvrR2OHksdU/exec"; // 👈 Dán link API Google Script ở đây
     // 🔹 Khi tải trang, gọi API để hiển thị các điểm đã lưu
-   fetch(apiURL)
+	 fetch(apiURL)
 	  .then(res => res.json())
 	  .then(data => {
 		console.log("Dữ liệu cũ từ Sheets:", data);
+
 		data.forEach(item => {
-		  taoMarker(item.lat, item.lng, item.loai, item.uuid);
+		  const lat = parseFloat(item.lat);
+		  const lng = parseFloat(item.lng);
+
+		  if (!isNaN(lat) && !isNaN(lng)) {
+			taoMarker(lat, lng, item.loai, item.uuid);
+		  } else {
+			console.warn("⚠️ Bỏ qua dữ liệu lỗi:", item);
+		  }
 		});
 	  })
+	  .catch(err => console.error("Lỗi tải dữ liệu:", err));
 
-      .catch(err => console.error("Lỗi tải dữ liệu:", err));
 
     function chonLoai(l) {
 	  loai = l;
@@ -82,55 +115,80 @@
 				   l === 'antoan' ? '✅ Điểm an toàn' : '🆘 Cần cứu hộ';
 	  document.getElementById('status').textContent = '🟢 Loại hiện tại: ' + text;
 	}
+ 
+const allMarkers = [];
+const markerMap = new Map();
 
-    function taoMarker(lat, lng, loai, uuid = null) {
-	  // 🎨 1. Xác định màu và nhãn dựa trên loại điểm
-	  let color, text;
-	  if (loai === 'ngap') {
-		color = 'red'; text = '🚫 Ngập';
-	  } else if (loai === 'antoan') {
-		color = 'green'; text = '✅ An toàn';
-	  } else if (loai === 'cuuho') {
-		color = 'orange'; text = '🆘 Cứu hộ';
-	  } else {
-		color = 'gray'; text = '❓Không rõ';
-	  }
-
-	  // 🗺️ 2. Tạo marker trên bản đồ
-	  const marker = L.circleMarker([lat, lng], {
-		radius: 10,
-		color: color,
-		fillColor: color,
-		fillOpacity: 0.8
-	  }).addTo(map);
-
-	  marker.uuid = uuid;
-
-	  // 🧩 3. Tạo popup hiển thị thông tin và tùy chọn
-	  let popup = `<b>${text}</b><br><i>${lat.toFixed(5)}, ${lng.toFixed(5)}</i>`;
-
-	  // 🔄 Nếu có UUID (điểm lấy từ Google Sheet) → thêm chức năng chỉnh sửa
-	  if (uuid) {
-		popup += `
-		  <br><label>Thay đổi loại:</label>
-		  <select id="newType_${uuid}">
-			<option value="ngap" ${loai === "ngap" ? "selected" : ""}>🚫 Ngập</option>
-			<option value="antoan" ${loai === "antoan" ? "selected" : ""}>✅ An toàn</option>
-			<option value="cuuho" ${loai === "cuuho" ? "selected" : ""}>🆘 Cứu hộ</option>
-		  </select>
-		  <br>
-		  <button onclick="capNhatLoai('${uuid}')">💾 Cập nhật</button>
-		  <button onclick="xoaDiem('${uuid}')">🗑️ Xóa điểm</button>
-		`;
-	  }
-
-	  marker.bindPopup(popup);
+function taoMarker(lat, lng, loai, uuid = null) {
+  // ⚠️ Tránh trùng marker khi load lại
+  if (uuid && markerMap.has(uuid)) {
+	  // Nếu đang cập nhật loại thì cho phép tạo lại marker mới (bỏ marker cũ)
+	  const oldMarker = markerMap.get(uuid);
+	  if (map.hasLayer(oldMarker)) map.removeLayer(oldMarker);
+	  markerMap.delete(uuid);
 	}
+
+  let iconUrl, text;
+
+  if (loai === 'ngap') {
+    iconUrl = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/26d4.svg"; // 🚫
+    text = "🚫 Ngập";
+  } else if (loai === 'antoan') {
+    iconUrl = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/2705.svg"; // ✅
+    text = "✅ An toàn";
+  } else if (loai === 'cuuho') {
+    iconUrl = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f198.svg"; // 🆘
+    text = "🆘 Cứu hộ";
+  } else {
+    iconUrl = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/2753.svg"; // ❓
+    text = "❓ Không rõ";
+  }
+
+  const icon = L.icon({
+    iconUrl: iconUrl,
+    iconSize: [28, 28],
+    iconAnchor: [14, 28],
+    popupAnchor: [0, -28]
+  });
+
+  const marker = L.marker([lat, lng], { icon }).addTo(map);
+  marker.uuid = uuid;
+
+  // 🧾 Tạo nội dung popup
+  let popup = `<b>${text}</b><br><i>${lat.toFixed(5)}, ${lng.toFixed(5)}</i>`;
+
+  if (uuid) {
+    popup += `
+      <br><label>Thay đổi loại:</label>
+      <select id="newType_${uuid}">
+        <option value="ngap" ${loai === "ngap" ? "selected" : ""}>🚫 Ngập</option>
+        <option value="antoan" ${loai === "antoan" ? "selected" : ""}>✅ An toàn</option>
+        <option value="cuuho" ${loai === "cuuho" ? "selected" : ""}>🆘 Cứu hộ</option>
+      </select>
+      <br>
+      <button onclick="capNhatLoai('${uuid}')">💾 Cập nhật</button>
+      <button onclick="xoaDiem('${uuid}')">🗑️ Xóa điểm</button>
+    `;
+  }
+
+  marker.bindPopup(popup);
+  allMarkers.push({ marker, loai });
+
+  // ✅ Ghi vào bảng theo dõi
+  if (uuid) markerMap.set(uuid, marker);
+
+  return marker; // 🔥 Quan trọng để map.on('click') hoạt động đúng
+}
+
+
+
 
     map.on('click', function(e) {
 	  const lat = e.latlng.lat;
 	  const lng = e.latlng.lng;
-	  taoMarker(lat, lng, loai); // hiển thị tạm thời khi người dùng click
+
+	  // 🟢 Tạo marker tạm thời (chưa có uuid)
+	  const tempMarker = taoMarker(lat, lng, loai);
 
 	  // Gửi dữ liệu lên Google Sheets
 	  fetch(apiURL, {
@@ -146,18 +204,16 @@
 	  .then(res => res.json())
 	  .then(data => {
 		console.log("Phản hồi:", data);
+
+		// ✅ Nếu server trả về uuid, xóa marker tạm & tạo lại marker thật
 		if (data.uuid) {
-		  // ✅ Xóa marker tạm và tạo lại với UUID thật
-		  map.eachLayer(function(layer) {
-			if (layer instanceof L.CircleMarker && !layer.uuid) {
-			  map.removeLayer(layer);
-			}
-		  });
+		  if (tempMarker) map.removeLayer(tempMarker);
 		  taoMarker(lat, lng, loai, data.uuid);
 		}
 	  })
 	  .catch(err => console.error("Lỗi khi gửi:", err));
 	});
+
 
 	function xoaDiem(uuid) {
 	  const adminKey = prompt("🔑 Nhập khóa admin để xóa điểm:");
@@ -176,13 +232,22 @@
 	  .then(data => {
 		if (data.status === "deleted") {
 		  alert("✅ Đã xóa điểm!");
-		  location.reload(); // reload lại map
+
+		  // 🔄 Tìm và xóa marker có cùng UUID mà không reload
+		  map.eachLayer(function(layer) {
+			if (layer.uuid === uuid) {
+			  layer.setOpacity(0);
+			  setTimeout(() => map.removeLayer(layer), 400);
+			}
+		  });
+
 		} else {
 		  alert("❌ Xóa thất bại: " + data.message);
 		}
 	  })
 	  .catch(err => alert("Lỗi khi xóa: " + err));
 	}
+
 
 	function capNhatLoai(uuid) {
 	  const select = document.getElementById(`newType_${uuid}`);
@@ -202,21 +267,57 @@
 		if (data.status === "ok") {
 		  alert("✅ Đã cập nhật loại điểm!");
 
-		  // 🔄 Không reload trang, chỉ cập nhật marker trên map
 		  map.eachLayer(function(layer) {
 			if (layer.uuid === uuid) {
-			  const latlng = layer.getLatLng(); // ✅ Lấy lại lat/lng
+			  const latlng = layer.getLatLng();
 			  map.removeLayer(layer);
-			  taoMarker(latlng.lat, latlng.lng, newType, uuid);
+
+			  // 🔹 Xóa marker cũ trong danh sách
+			  const index = allMarkers.findIndex(m => m.marker.uuid === uuid);
+			  if (index !== -1) allMarkers.splice(index, 1);
+
+			  // 🔹 Tạo lại marker mới và thêm vào danh sách
+			  const newMarker = taoMarker(latlng.lat, latlng.lng, newType, uuid);
+			  allMarkers.push({ marker: newMarker, loai: newType });
+
+			  // 🔹 Cập nhật hiển thị theo bộ lọc hiện tại
+			  capNhatBoLoc();
 			}
 		  });
-
 		} else {
 		  alert("❌ Lỗi: " + data.message);
 		}
 	  })
 	  .catch(err => alert("⚠️ Lỗi khi cập nhật: " + err));
 	}
+
+
+// 🧭 Hàm cập nhật hiển thị theo bộ lọc
+function capNhatBoLoc() {
+  const showNgap = document.getElementById("filter_ngap").checked;
+  const showAntoan = document.getElementById("filter_antoan").checked;
+  const showCuuho = document.getElementById("filter_cuuho").checked;
+
+  allMarkers.forEach(item => {
+    const { marker, loai } = item;
+
+    const hien = 
+      (loai === "ngap" && showNgap) ||
+      (loai === "antoan" && showAntoan) ||
+      (loai === "cuuho" && showCuuho);
+
+    if (hien) {
+      if (!map.hasLayer(marker)) marker.addTo(map);
+    } else {
+      if (map.hasLayer(marker)) map.removeLayer(marker);
+    }
+  });
+}
+
+// 📌 Gắn sự kiện khi người dùng click checkbox
+document.getElementById("filter_ngap").addEventListener("change", capNhatBoLoc);
+document.getElementById("filter_antoan").addEventListener("change", capNhatBoLoc);
+document.getElementById("filter_cuuho").addEventListener("change", capNhatBoLoc);
 
   </script>
 </body>
