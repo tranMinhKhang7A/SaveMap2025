@@ -23,12 +23,11 @@
     .ngap { background: #e74c3c; color: white; }
     .antoan { background: #27ae60; color: white; }
     .cuuho { background: #f1c40f; color: black; }
+    .tacduong { background: #b93d3d; color: white; }
   </style>
-  
 </head>
 
 <body>
-  
   <div style="text-align: center; line-height: 1.4;">
     <h3 style="margin: 0; font-size: 20px; color: #0055aa;">
       🌧️ BẢN ĐỒ AN TOÀN TRONG LŨ
@@ -46,25 +45,26 @@
       – Trần Minh Khang, lớp 8C, THCS Phú Minh
     </p>
   </div>
-  
-    <!-- Bộ lọc hiển thị điểm -->
+
+  <!-- Bộ lọc hiển thị điểm -->
   <div style="margin: 10px; font-size: 15px;">
     <label><input type="checkbox" id="filter_ngap" checked> 🚫 Hiện đường ngập</label>
     <label style="margin-left: 10px;"><input type="checkbox" id="filter_antoan" checked> ✅ Hiện điểm an toàn</label>
     <label style="margin-left: 10px;"><input type="checkbox" id="filter_cuuho" checked> 🆘 Hiện cứu hộ</label>
+    <label style="margin-left: 10px;"><input type="checkbox" id="filter_tacduong" checked> 🛑🚗 Hiện tắc đường</label>
   </div>
 
-  
   <div id="status" style="margin:10px; font-weight:bold; color:green;">
-  🟢 Loại hiện tại: ✅ Điểm an toàn
+    🟢 Loại hiện tại: ✅ Điểm an toàn
   </div>
-  
+
   <div class="buttons">
     <button class="ngap" onclick="chonLoai('ngap')">🚫 Đường ngập</button>
     <button class="antoan" onclick="chonLoai('antoan')">✅ Điểm an toàn</button>
     <button class="cuuho" onclick="chonLoai('cuuho')">🆘 Cần cứu hộ</button>
+    <button class="tacduong" onclick="chonLoai('tacduong')">🛑🚗 Tắc đường</button>
   </div>
-  
+
   <div id="map"></div>
 
   <script>
@@ -73,252 +73,227 @@
       maxZoom: 19,
       attribution: '© OpenStreetMap'
     }).addTo(map);
-    // 🔹 Định vị vị trí hiện tại của người dùng
-	map.locate({ setView: true, maxZoom: 16 });
 
-	function onLocationFound(e) {
-	  L.marker(e.latlng).addTo(map).bindPopup("📍 Bạn đang ở đây!").openPopup();
-	}
+    map.locate({ setView: true, maxZoom: 16 });
 
-	function onLocationError(e) {
-	  console.warn("⚠️ Không thể lấy vị trí:", e.message);
-	}
+    function onLocationFound(e) {
+      L.marker(e.latlng).addTo(map).bindPopup("📍 Bạn đang ở đây!").openPopup();
+    }
 
-	map.on('locationfound', onLocationFound);
-	map.on('locationerror', onLocationError);
+    function onLocationError(e) {
+      console.warn("⚠️ Không thể lấy vị trí:", e.message);
+    }
+
+    map.on('locationfound', onLocationFound);
+    map.on('locationerror', onLocationError);
 
     var loai = 'antoan';
-      var apiURL = "https://billowing-sea-9e3a.agribarniot.workers.dev/https://script.google.com/macros/s/AKfycbzFeesLV0wX1lIDi1iT7SwWp7DhXLwcWstueOiorJvjPZYPt84E5bmKXvrR2OHksdU/exec"; // 👈 Dán link API Google Script ở đây
+    var apiURL = "https://billowing-sea-9e3a.agribarniot.workers.dev/https://script.google.com/macros/s/AKfycbzFeesLV0wX1lIDi1iT7SwWp7DhXLwcWstueOiorJvjPZYPt84E5bmKXvrR2OHksdU/exec";
+
     // 🔹 Khi tải trang, gọi API để hiển thị các điểm đã lưu
-	 fetch(apiURL)
-	  .then(res => res.json())
-	  .then(data => {
-		console.log("Dữ liệu cũ từ Sheets:", data);
-
-		data.forEach(item => {
-		  const lat = parseFloat(item.lat);
-		  const lng = parseFloat(item.lng);
-
-		  if (!isNaN(lat) && !isNaN(lng)) {
-			taoMarker(lat, lng, item.loai, item.uuid);
-		  } else {
-			console.warn("⚠️ Bỏ qua dữ liệu lỗi:", item);
-		  }
-		});
-	  })
-	  .catch(err => console.error("Lỗi tải dữ liệu:", err));
-
+    fetch(apiURL)
+      .then(res => res.json())
+      .then(data => {
+        data.forEach(item => {
+          const lat = parseFloat(item.lat);
+          const lng = parseFloat(item.lng);
+          if (!isNaN(lat) && !isNaN(lng)) {
+            taoMarker(lat, lng, item.loai, item.uuid);
+          }
+        });
+      })
+      .catch(err => console.error("Lỗi tải dữ liệu:", err));
 
     function chonLoai(l) {
-	  loai = l;
-	  const text = l === 'ngap' ? '🚫 Đường ngập' :
-				   l === 'antoan' ? '✅ Điểm an toàn' : '🆘 Cần cứu hộ';
-	  document.getElementById('status').textContent = '🟢 Loại hiện tại: ' + text;
-	}
- 
-const allMarkers = [];
-const markerMap = new Map();
+      loai = l;
+      const text = l === 'ngap' ? '🚫 Đường ngập' :
+                   l === 'antoan' ? '✅ Điểm an toàn' :
+                   l === 'cuuho' ? '🆘 Cần cứu hộ' :
+                   '🛑🚗 Tắc đường';
+      document.getElementById('status').textContent = '🟢 Loại hiện tại: ' + text;
+    }
 
-function taoMarker(lat, lng, loai, uuid = null) {
-  // ⚠️ Tránh trùng marker khi load lại
-  if (uuid && markerMap.has(uuid)) {
-	  // Nếu đang cập nhật loại thì cho phép tạo lại marker mới (bỏ marker cũ)
-	  const oldMarker = markerMap.get(uuid);
-	  if (map.hasLayer(oldMarker)) map.removeLayer(oldMarker);
-	  markerMap.delete(uuid);
-	}
+    const allMarkers = [];
+    const markerMap = new Map();
 
-  let iconUrl, text;
+    function taoMarker(lat, lng, loai, uuid = null) {
+      if (uuid && markerMap.has(uuid)) {
+        const oldMarker = markerMap.get(uuid);
+        if (map.hasLayer(oldMarker)) map.removeLayer(oldMarker);
+        markerMap.delete(uuid);
+      }
 
-  if (loai === 'ngap') {
-    iconUrl = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/26d4.svg"; // 🚫
-    text = "🚫 Ngập";
-  } else if (loai === 'antoan') {
-    iconUrl = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/2705.svg"; // ✅
-    text = "✅ An toàn";
-  } else if (loai === 'cuuho') {
-    iconUrl = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f198.svg"; // 🆘
-    text = "🆘 Cứu hộ";
-  } else {
-    iconUrl = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/2753.svg"; // ❓
-    text = "❓ Không rõ";
-  }
+      let iconUrl, text;
 
-  const icon = L.icon({
-    iconUrl: iconUrl,
-    iconSize: [28, 28],
-    iconAnchor: [14, 28],
-    popupAnchor: [0, -28]
-  });
+      if (loai === 'ngap') {
+        iconUrl = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/26d4.svg";
+        text = "🚫 Ngập";
+      } else if (loai === 'antoan') {
+        iconUrl = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/2705.svg";
+        text = "✅ An toàn";
+      } else if (loai === 'cuuho') {
+        iconUrl = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f198.svg";
+        text = "🆘 Cứu hộ";
+      } else if (loai === 'tacduong') {
+        iconUrl = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f6a7.svg"; // 🚧
+        text = "🛑🚗 Tắc đường";
+      } else {
+        iconUrl = "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/2753.svg";
+        text = "❓ Không rõ";
+      }
 
-  const marker = L.marker([lat, lng], { icon }).addTo(map);
-  marker.uuid = uuid;
+      const icon = L.icon({
+        iconUrl: iconUrl,
+        iconSize: [28, 28],
+        iconAnchor: [14, 28],
+        popupAnchor: [0, -28]
+      });
 
-  // 🧾 Tạo nội dung popup
-  let popup = `<b>${text}</b><br><i>${lat.toFixed(5)}, ${lng.toFixed(5)}</i>`;
+      const marker = L.marker([lat, lng], { icon }).addTo(map);
+      marker.uuid = uuid;
 
-  if (uuid) {
-    popup += `
-      <br><label>Thay đổi loại:</label>
-      <select id="newType_${uuid}">
-        <option value="ngap" ${loai === "ngap" ? "selected" : ""}>🚫 Ngập</option>
-        <option value="antoan" ${loai === "antoan" ? "selected" : ""}>✅ An toàn</option>
-        <option value="cuuho" ${loai === "cuuho" ? "selected" : ""}>🆘 Cứu hộ</option>
-      </select>
-      <br>
-      <button onclick="capNhatLoai('${uuid}')">💾 Cập nhật</button>
-      <button onclick="xoaDiem('${uuid}')">🗑️ Xóa điểm</button>
-    `;
-  }
+      // 🧾 Popup
+      let popup = `<b>${text}</b><br><i>${lat.toFixed(5)}, ${lng.toFixed(5)}</i>`;
 
-  marker.bindPopup(popup);
-  allMarkers.push({ marker, loai });
+      if (uuid) {
+        popup += `
+          <br><label>Thay đổi loại:</label>
+          <select id="newType_${uuid}">
+            <option value="ngap" ${loai === "ngap" ? "selected" : ""}>🚫 Ngập</option>
+            <option value="antoan" ${loai === "antoan" ? "selected" : ""}>✅ An toàn</option>
+            <option value="cuuho" ${loai === "cuuho" ? "selected" : ""}>🆘 Cứu hộ</option>
+            <option value="tacduong" ${loai === "tacduong" ? "selected" : ""}>🛑🚗 Tắc đường</option>
+          </select>
+          <br>
+          <button onclick="capNhatLoai('${uuid}')">💾 Cập nhật</button>
+          <button onclick="xoaDiem('${uuid}')">🗑️ Xóa điểm</button>
+        `;
+      }
 
-  // ✅ Ghi vào bảng theo dõi
-  if (uuid) markerMap.set(uuid, marker);
-
-  return marker; // 🔥 Quan trọng để map.on('click') hoạt động đúng
-}
-
-
-
+      marker.bindPopup(popup);
+      allMarkers.push({ marker, loai });
+      if (uuid) markerMap.set(uuid, marker);
+      return marker;
+    }
 
     map.on('click', function(e) {
-	  const lat = e.latlng.lat;
-	  const lng = e.latlng.lng;
+      const lat = e.latlng.lat;
+      const lng = e.latlng.lng;
 
-	  // 🟢 Tạo marker tạm thời (chưa có uuid)
-	  const tempMarker = taoMarker(lat, lng, loai);
+      const tempMarker = taoMarker(lat, lng, loai);
 
-	  // Gửi dữ liệu lên Google Sheets
-	  fetch(apiURL, {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({
-		  action: "add",
-		  loai: loai,
-		  lat: lat,
-		  lng: lng
-		})
-	  })
-	  .then(res => res.json())
-	  .then(data => {
-		console.log("Phản hồi:", data);
+      fetch(apiURL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "add",
+          loai: loai,
+          lat: lat,
+          lng: lng
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.uuid) {
+          map.removeLayer(tempMarker);
+          taoMarker(lat, lng, loai, data.uuid);
+        }
+      })
+      .catch(err => console.error("Lỗi khi gửi:", err));
+    });
 
-		// ✅ Nếu server trả về uuid, xóa marker tạm & tạo lại marker thật
-		if (data.uuid) {
-		  if (tempMarker) map.removeLayer(tempMarker);
-		  taoMarker(lat, lng, loai, data.uuid);
-		}
-	  })
-	  .catch(err => console.error("Lỗi khi gửi:", err));
-	});
+    function xoaDiem(uuid) {
+      const adminKey = prompt("🔑 Nhập khóa admin để xóa điểm:");
+      if (!adminKey) return;
 
-
-	function xoaDiem(uuid) {
-	  const adminKey = prompt("🔑 Nhập khóa admin để xóa điểm:");
-	  if (!adminKey) return;
-
-	  fetch(apiURL, {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({
-		  action: "delete",
-		  uuid: uuid,
-		  adminKey: adminKey
-		})
-	  })
-	  .then(res => res.json())
-	  .then(data => {
-		if (data.status === "deleted") {
-		  alert("✅ Đã xóa điểm!");
-
-		  // 🔄 Tìm và xóa marker có cùng UUID mà không reload
-		  map.eachLayer(function(layer) {
-			if (layer.uuid === uuid) {
-			  layer.setOpacity(0);
-			  setTimeout(() => map.removeLayer(layer), 400);
-			}
-		  });
-
-		} else {
-		  alert("❌ Xóa thất bại: " + data.message);
-		}
-	  })
-	  .catch(err => alert("Lỗi khi xóa: " + err));
-	}
-
-
-	function capNhatLoai(uuid) {
-	  const select = document.getElementById(`newType_${uuid}`);
-	  const newType = select.value;
-
-	  fetch(apiURL, {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({
-		  action: "updateType",
-		  uuid: uuid,
-		  loai: newType
-		})
-	  })
-	  .then(res => res.json())
-	  .then(data => {
-		if (data.status === "ok") {
-		  alert("✅ Đã cập nhật loại điểm!");
-
-		  map.eachLayer(function(layer) {
-			if (layer.uuid === uuid) {
-			  const latlng = layer.getLatLng();
-			  map.removeLayer(layer);
-
-			  // 🔹 Xóa marker cũ trong danh sách
-			  const index = allMarkers.findIndex(m => m.marker.uuid === uuid);
-			  if (index !== -1) allMarkers.splice(index, 1);
-
-			  // 🔹 Tạo lại marker mới và thêm vào danh sách
-			  const newMarker = taoMarker(latlng.lat, latlng.lng, newType, uuid);
-			  allMarkers.push({ marker: newMarker, loai: newType });
-
-			  // 🔹 Cập nhật hiển thị theo bộ lọc hiện tại
-			  capNhatBoLoc();
-			}
-		  });
-		} else {
-		  alert("❌ Lỗi: " + data.message);
-		}
-	  })
-	  .catch(err => alert("⚠️ Lỗi khi cập nhật: " + err));
-	}
-
-
-// 🧭 Hàm cập nhật hiển thị theo bộ lọc
-function capNhatBoLoc() {
-  const showNgap = document.getElementById("filter_ngap").checked;
-  const showAntoan = document.getElementById("filter_antoan").checked;
-  const showCuuho = document.getElementById("filter_cuuho").checked;
-
-  allMarkers.forEach(item => {
-    const { marker, loai } = item;
-
-    const hien = 
-      (loai === "ngap" && showNgap) ||
-      (loai === "antoan" && showAntoan) ||
-      (loai === "cuuho" && showCuuho);
-
-    if (hien) {
-      if (!map.hasLayer(marker)) marker.addTo(map);
-    } else {
-      if (map.hasLayer(marker)) map.removeLayer(marker);
+      fetch(apiURL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "delete",
+          uuid: uuid,
+          adminKey: adminKey
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "deleted") {
+          alert("✅ Đã xóa điểm!");
+          map.eachLayer(function(layer) {
+            if (layer.uuid === uuid) {
+              layer.setOpacity(0);
+              setTimeout(() => map.removeLayer(layer), 400);
+            }
+          });
+        } else {
+          alert("❌ Xóa thất bại: " + data.message);
+        }
+      })
+      .catch(err => alert("Lỗi khi xóa: " + err));
     }
-  });
-}
 
-// 📌 Gắn sự kiện khi người dùng click checkbox
-document.getElementById("filter_ngap").addEventListener("change", capNhatBoLoc);
-document.getElementById("filter_antoan").addEventListener("change", capNhatBoLoc);
-document.getElementById("filter_cuuho").addEventListener("change", capNhatBoLoc);
+    function capNhatLoai(uuid) {
+      const select = document.getElementById(`newType_${uuid}`);
+      const newType = select.value;
 
+      fetch(apiURL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "updateType",
+          uuid: uuid,
+          loai: newType
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "ok") {
+          alert("✅ Đã cập nhật loại điểm!");
+          map.eachLayer(function(layer) {
+            if (layer.uuid === uuid) {
+              const latlng = layer.getLatLng();
+              map.removeLayer(layer);
+              const index = allMarkers.findIndex(m => m.marker.uuid === uuid);
+              if (index !== -1) allMarkers.splice(index, 1);
+              const newMarker = taoMarker(latlng.lat, latlng.lng, newType, uuid);
+              allMarkers.push({ marker: newMarker, loai: newType });
+              capNhatBoLoc();
+            }
+          });
+        } else {
+          alert("❌ Lỗi: " + data.message);
+        }
+      })
+      .catch(err => alert("⚠️ Lỗi khi cập nhật: " + err));
+    }
+
+    // 🧭 Hàm cập nhật hiển thị theo bộ lọc
+    function capNhatBoLoc() {
+      const showNgap = document.getElementById("filter_ngap").checked;
+      const showAntoan = document.getElementById("filter_antoan").checked;
+      const showCuuho = document.getElementById("filter_cuuho").checked;
+      const showTacduong = document.getElementById("filter_tacduong").checked;
+
+      allMarkers.forEach(item => {
+        const { marker, loai } = item;
+        const hien =
+          (loai === "ngap" && showNgap) ||
+          (loai === "antoan" && showAntoan) ||
+          (loai === "cuuho" && showCuuho) ||
+          (loai === "tacduong" && showTacduong);
+
+        if (hien) {
+          if (!map.hasLayer(marker)) marker.addTo(map);
+        } else {
+          if (map.hasLayer(marker)) map.removeLayer(marker);
+        }
+      });
+    }
+
+    document.getElementById("filter_ngap").addEventListener("change", capNhatBoLoc);
+    document.getElementById("filter_antoan").addEventListener("change", capNhatBoLoc);
+    document.getElementById("filter_cuuho").addEventListener("change", capNhatBoLoc);
+    document.getElementById("filter_tacduong").addEventListener("change", capNhatBoLoc);
   </script>
 </body>
 </html>
