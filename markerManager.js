@@ -153,17 +153,22 @@ function taoMarker(lat, lng, loai, uuid = null) {
     ["filter_ngap","filter_antoan","filter_cuuho","filter_tacduong"]
       .forEach(id => document.getElementById(id).addEventListener("change", capNhatBoLoc));
 
+let cheDoTimDuong = false;
+
+function batCheDoTimDuong() {
+    cheDoTimDuong = true;
+    alert("📍 Chạm lên bản đồ để chọn điểm đến.");
+}
 function xuLyClickBanDo(e) {
-      // Shift + click -> tìm đường
-      if (e.originalEvent.shiftKey) {
-        const lat = e.latlng.lat, lng = e.latlng.lng;
+      const lat = e.latlng.lat, lng = e.latlng.lng;
+      if (cheDoTimDuong) {
+        cheDoTimDuong = false;  // Tắt chế độ sau khi chọn 1 điểm
         L.marker([lat, lng]).addTo(map).bindPopup("🎯 Điểm đến").openPopup();
         timDuongAnToan(lat, lng);
         return;
       }
 
       // Click bình thường -> thêm điểm
-      const lat = e.latlng.lat, lng = e.latlng.lng;
       const tempMarker = taoMarker(lat, lng, loai);
 
       fetch(apiURL, {
