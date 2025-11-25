@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Bản đồ an toàn trong lũ 🌧️</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="icon.png">
+
+  <!-- Thư viện Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Thêm Leaflet Routing Machine -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+  <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+
+  <!-- CSS riêng -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <!-- Tiêu đề -->
+  <div style="text-align: center; line-height: 1.4;">
+    <h3 style="margin: 0; font-size: 20px; color: #0055aa;"> 🌧️ BẢN ĐỒ AN TOÀN TRONG LŨ </h3>
+    <p style="margin: 3px 0 8px 0; font-size: 16px; color: #004080;">
+      Vì một mùa mưa không ai bị bỏ lại
+    </p>
+    <p style="font-size: 14px; color: #333;">
+      Một bản đồ nhỏ bé, được vẽ nên bởi chính những người trong vùng lũ — thầy cô, học sinh, và những tấm lòng nhân ái 💙
+    </p>
+  </div>
+
+  <!-- Bộ lọc hiển thị điểm -->
+  <div style="margin: 10px; font-size: 15px;">
+    <label><input type="checkbox" id="filter_ngap" checked> 🚫 Hiện đường ngập</label>
+    <label style="margin-left: 10px;"><input type="checkbox" id="filter_antoan" checked> ✅ Hiện điểm an toàn</label>
+    <label style="margin-left: 10px;"><input type="checkbox" id="filter_cuuho" checked> 🆘 Hiện cứu hộ</label>
+    <label style="margin-left: 10px;"><input type="checkbox" id="filter_tacduong" checked> 🛑🚗 Hiện tắc đường</label>
+  </div>
+
+  <!-- Trạng thái loại điểm -->
+  <div id="status" style="margin:10px; font-weight:bold; color:green;">
+    🟢 Loại hiện tại: ✅ Điểm an toàn
+  </div>
+
+  <!-- Nút chọn loại điểm -->
+  <div class="buttons">
+    <button class="ngap" onclick="chonLoai('ngap')">🚫 Đường ngập</button>
+    <button class="antoan" onclick="chonLoai('antoan')">✅ Điểm an toàn</button>
+    <button class="cuuho" onclick="chonLoai('cuuho')">🆘 Cần cứu hộ</button>
+    <button class="tacduong" onclick="chonLoai('tacduong')">🛑🚗 Tắc đường</button>
+  </div>
+
+  <!-- Nút kiểm thử -->
+  <div style="margin:10px;">
+    <button onclick="testNhieuNguoi()" style="background:#007bff;color:white;">
+      🧪 Kiểm thử hiệu năng nhiều người dùng
+    </button>
+  </div>
+
+  <!-- Bản đồ -->
+  <div id="map"></div>
+
+  <!-- Script -->
+  <script src="mapCore.js"></script> // Bản đồ và vị trí người dùng
+  <script src="markerManager.js"></script> // Quản lý marker
+  <script src="routing.js"></script> // Tính năng định tuyến
+  <script src="testPerformance.js"></script> // Kiểm thử hiệu năng
+
+  <script>
+  // ================== HÀM XỬ LÝ CHÍNH ==================
+  window.addEventListener("DOMContentLoaded", () => {
+    // Khởi tạo bản đồ
+    map = khoiTaoBanDo();
+    // Gán sự kiện vị trí người dùng
+    map.on('locationfound', xuLyLocationFound);
+    map.on('locationerror', xuLyLocationError);
+    // Gắn sự kiện click trên bản đồ
+    map.on('click', xuLyClickBanDo);
+    // Tải dữ liệu ban đầu
+    taiDuLieuBanDau();
+  });
+  </script>
+
+</body>
+</html>
